@@ -80,6 +80,10 @@ def symbol_var_size_filter(context, value):
     return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, None) if s.get(collector.TYPE, None) == collector.TYPE_VARIABLE else 0)
 
 @jinja2.pass_context
+def symbol_mem_size_filter(context, value, mem_reg):
+    return traverse_filter_wrapper(value, lambda s: s.get(collector.SIZE, None) if s.get(collector.MEM_REG, None) == mem_reg else 0)
+
+@jinja2.pass_context
 def symbol_stack_size_filter(context, value, stack_base=None):
     if isinstance(stack_base, str):
         stack_base = None
@@ -251,6 +255,7 @@ class HTMLRenderer(View):
             "all_functions": collector.all_functions(),
             "all_variables": collector.all_variables(),
             "now": datetime.now(),
+            "memory_regions": collector.all_mem_regs(),
         }
 
     def render_template(self, template_name, file_name):
@@ -360,6 +365,7 @@ def register_jinja_filters(jinja_env):
     jinja_env.filters["symbol_file_url"] = symbol_file_url_filter
     jinja_env.filters["symbol_code_size"] = symbol_code_size_filter
     jinja_env.filters["symbol_var_size"] = symbol_var_size_filter
+    jinja_env.filters["symbol_mem_size"] = symbol_mem_size_filter
     jinja_env.filters["symbol_stack_size"] = symbol_stack_size_filter
     jinja_env.filters["if_not_none"] = if_not_none_filter
     jinja_env.filters["unique"] = unique_filter

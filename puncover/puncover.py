@@ -3,6 +3,8 @@
 import argparse
 import os
 import webbrowser
+import glob
+
 from distutils.spawn import find_executable
 from os.path import dirname
 from threading import Timer
@@ -11,7 +13,7 @@ from flask import Flask
 
 from puncover import renderers
 from puncover.builders import ElfBuilder
-from puncover.collector import Collector
+from puncover.collector import Collector, parse_ld_memory
 from puncover.gcc_tools import GCCTools
 from puncover.middleware import BuilderMiddleware
 from puncover.version import __version__
@@ -75,6 +77,8 @@ def main():
     )
     parser.add_argument('--gcc-tools-base', '--gcc_tools_base', default=gcc_tools_base,
                         help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
+    parser.add_argument('--ld-file', '--ld-file', default='.',
+                        help='location of an Link file')
     parser.add_argument('--elf_file', '--elf-file', required=True,
                         help='location of an ELF file')
     parser.add_argument('--src_root', '--src-root',
@@ -95,6 +99,14 @@ def main():
     if args.gcc_tools_base is None:
         print("Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base")
         exit(1)
+
+    ld_files = glob.glob(os.path.join(os.path.abspath(args.ld_file), '*.ld'))
+
+    if ld_files[0] == None:
+        print("Unbale to find .ld file")
+        exit(1)
+
+    parse_ld_memory(ld_files[0])
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)

@@ -19,14 +19,19 @@
                 <th>Address</th>
                 <th>Remarks</th>
                 <th>Stack</th>
-                <th>Code</th>
-                <th>Static</th>
+                {% for mem_reg in memory_regions %}
+                    <th>{{ mem_reg }}</th>
+                {% endfor %}
             </tr>
             <tr>
                 <td>0x{{ symbol.address }}</td>
                 <td>{{ lists.symbol_remarks(symbol) }}</td>
                 <td>{% if symbol.stack_size is defined %}{{ symbol.stack_size | bytes }} ({{ symbol.stack_qualifiers }}){% endif %}</td>
-                <td>{{ symbol.size | bytes }}</td>
+
+                {% for mem_reg in memory_regions %}
+                    <td>{% if symbol.memory_region == mem_reg%}{{ symbol.size | bytes }}{% endif %}</td>
+                {% endfor %}
+
                 <td></td>
             </tr>
 

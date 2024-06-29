@@ -1,5 +1,6 @@
 {% set color_bar_code = 'rgba(0,0,255,0.07)' %}
 {% set color_bar_var = 'rgba(255, 0, 0, 0.07)' %}
+{% set color_bar = ['rgba(0,0,255,0.07)', 'rgba(255, 0, 0, 0.07)'] %}
 
 {% macro breadcrumbs(folder, file, line) %}
     <ol class="breadcrumb folders">
@@ -29,64 +30,48 @@
             <tr>
                 <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
-                <th class="col_size">{{ 'Code' | col_sortable }}</th>
-                <th class="col_size">{{ 'Static' | col_sortable(False, 'vars') }}</th>
+                {% for mem_reg in memory_regions %}
+                    <th class="col_size">{{ mem_reg | col_sortable(False, 'vars') }}</th>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
-            {% set group_code_size = folders | symbol_code_size %}
-            {% set group_var_size = folders | symbol_var_size %}
-            {% for folder in (folders | sorted) %}
-            <tr>
-                <td>
-                    <a href="{{ folder | symbol_url }}" class="icon-folder">
-                        &nbsp;{{ folder.name | e}}
-                    </a>
-                </td>
-                <td>{% if folder.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
-                <td class="col_size" style="{{ folder | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
-                    {{ folder | symbol_code_size | bytes }}
-                </td>
-                <td class="col_size" style="{{ folder | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
-                    {{ folder | symbol_var_size | bytes }}
-                </td>
-            </tr>
-            {% endfor %}
-            {% if folders | length > 1 and files | length > 0 %}
-                <tr>
-                <th>&sum; {{ folders|length }} folders</th>
-                <th></th>
-                <th class="col_size">{{ group_code_size | bytes }}</th>
-                <th class="col_size">{{ group_var_size | bytes }}</th>
-                </tr>
-            {% endif %}
 
-            {% set group_code_size = files | symbol_code_size %}
-            {% set group_var_size = files | symbol_var_size %}
-            {% for file in (files | sorted) %}
-            <tr>
-                <td>
-                    <a href="{{ file | symbol_url }}" class="icon-file">
-                        &nbsp;{{ file.name | e}}
-                    </a>
-                </td>
-                <td>{% if file.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
-                <td class="col_size" style="{{ file | symbol_code_size | style_background_bar(group_code_size, color_bar_code) }}">
-                    {{ file | symbol_code_size | bytes}}
-                </td>
-                <td class="col_size" style="{{ file | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
-                    {{ file | symbol_var_size | bytes}}
-                </td>
-            </tr>
-            {% endfor %}
-            {% if files | length > 1 and folders | length > 0 %}
+            {% for folder in (folders | sorted) %}
                 <tr>
-                    <th>&sum; {{ files|length }}  files</th>
-                    <th></th>
-                    <th class="col_size">{{ group_code_size | bytes}}</th>
-                    <th class="col_size">{{ group_var_size | bytes}}</th>
+                    <td>
+                        <a href="{{ folder | symbol_url }}" class="icon-folder">
+                            &nbsp;{{ folder.name | e}}
+                        </a>
+                    </td>
+                    <td>{% if folder.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
+   
+                    {% for region in memory_regions %}
+                        <td class="col_size" style="{{ folder | symbol_mem_size(region) | style_background_bar(folders | symbol_mem_size(region), color_bar[loop.index0 % color_bar|length]) }}">
+                        {{ folder | symbol_mem_size(region) | bytes }}
+                        </td>
+                    {% endfor %}
                 </tr>
-            {% endif %}
+            {% endfor %}
+
+
+            {% for file in (files | sorted) %}
+                <tr>
+                    <td>
+                        <a href="{{ file | symbol_url }}" class="icon-file">
+                            &nbsp;{{ file.name | e}}
+                        </a>
+                    </td>
+                    <td>{% if file.calls_float_function %}<span class="label label-warning">calls float</span>{% endif %}</td>
+
+                    {% for region in memory_regions %}
+                        <td class="col_size" style="{{ file | symbol_mem_size(region) | style_background_bar(files | symbol_mem_size(region), color_bar[loop.index0 % color_bar|length]) }}">
+                        {{ file | symbol_mem_size(region) | bytes }}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+
         </tbody>
         <tfoot>
             <tr>
@@ -94,8 +79,9 @@
                 ({{ folders | length }} folder{{ 's' if folders | length != 1}},
                  {{ files | length }} file{{ 's' if files | length != 1}})
             </th>
-            <th class="col_size">{{ files | chain(folders) | symbol_code_size | bytes}}</th>
-            <th class="col_size">{{ files | chain(folders) | symbol_var_size | bytes}}</th>
+            {% for region in memory_regions %}
+                <th>{{ (folders + files) | symbol_mem_size(region) | bytes }}</th>
+            {% endfor %}
             </tr>
         </tfoot>
 
@@ -114,52 +100,54 @@
                 <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 <th class="col_size">{{ 'Stack' | col_sortable(true) }}</th>
-                <th class="col_size">{{ 'Code' | col_sortable(true) }}</th>
-                <th class="col_size">{{ 'Static' | col_sortable(False, 'vars') }}</th>
+                {% for mem_reg in memory_regions %}
+                    <th class="col_size">{{ mem_reg | col_sortable(False, 'vars') }}</th>
+                {% endfor %}
             </tr>
         </thead>
 
         <tbody>
-
 {# functions #}
-                {% set group_code_size = functions | symbol_code_size %}
-                {% set group_var_size = (variables + functions) | symbol_var_size %}
-
-                {% for symbol in (functions | sorted) %}
+            {% for symbol in (functions | sorted) %}
                 <tr>
                     <td><a href="{{ symbol | symbol_url }}" class="icon-function">{{ symbol.display_name |e }}</a></td>
                     <td>{{ symbol_remarks(symbol) }}</td>
                     <td class="col_size">{{ symbol.stack_size | bytes }}</td>
-                    <td class="col_size" style="{{ symbol.size | style_background_bar(group_code_size, color_bar_code) }}">
-                    {{ symbol.size | bytes }}
-                    </td>
-                    <td class="col_size"></td>
+                    {% for region in memory_regions %}
+                        <td class="col_size" style="{{ symbol | symbol_mem_size(region) | style_background_bar(functions | symbol_mem_size(region), color_bar[loop.index0 % color_bar|length]) }}">
+                            {{ symbol | symbol_mem_size(region) | bytes }}
+                        </td>
+                    {% endfor %}
                 </tr>
-                {% endfor %}
+            {% endfor %}
             {% if functions | length > 1 and variables | length > 0 %}
                 <tr>
                     <th colspan="3">&sum; {{ functions | length }} functions</th>
-                    <th class="col_size">{{ functions | symbol_code_size | bytes }}</th>
-                    <th></th>
+                    {% for region in memory_regions %}
+                        <th class="col_size">{{ functions | symbol_mem_size(region) | bytes }}</th>
+                    {% endfor %}
                 </tr>
             {% endif %}
-
 {# static vars #}
             {% for var in variables | sorted %}
-             <tr>
-                <td colspan="4"><span class="icon-variable">{{ var.display_name |e }}</span></td>
-                <td class="col_size" style="{{ var | symbol_var_size | style_background_bar(group_var_size, color_bar_var) }}">
-                    {{ var | symbol_var_size | bytes }}
-                </td>
-            </tr>
+                <tr>
+                    <td colspan="3"><span class="icon-variable">{{ var.display_name |e }}</span></td>
+                    {% for region in memory_regions %}
+                        <td class="col_size" style="{{ var | symbol_mem_size(region) | style_background_bar(variables | symbol_mem_size(region), color_bar[loop.index0 % color_bar|length]) }}">
+                            {{var| symbol_mem_size(region) | bytes }}
+                        </td>
+                    {% endfor %}
+                </tr>
             {% endfor %}
-        {% if variables | length > 1 and functions | length > 0 %}
-            <tr>
-                <th colspan="4">&sum; {{ variables | length }} variables</th>
-                <th class="col_size">{{ variables | symbol_var_size | bytes }}</th>
-            </tr>
-        {% endif %}
-            </tbody>
+            {% if variables | length > 1 and functions | length > 0 %}
+                <tr>
+                    <th colspan="3">&sum; {{ variables | length }} variables</th>
+                    {% for region in memory_regions %}
+                        <th class="col_size">{{ variables | symbol_mem_size(region) | bytes }}</th>
+                    {% endfor %}
+                </tr>
+            {% endif %}
+        </tbody>
 
         <tfoot>
             <tr>
@@ -168,8 +156,9 @@
                  {{ variables | length }} variable{{ 's' if variables | length != 1}})
 
             </th>
-            <th class="col_size">{{ group_code_size | bytes}}</th>
-            <th class="col_size">{{ group_var_size | bytes}}</th>
+            {% for region in memory_regions %}
+                <th>{{ (functions + variables) | symbol_mem_size(region) | bytes }}</th>
+            {% endfor %}
             </tr>
         </tfoot>
 

@@ -19,6 +19,7 @@ TYPE_FUNCTION = "function"
 TYPE_VARIABLE = "variable"
 TYPE_FILE = "file"
 TYPE_FOLDER = "folder"
+MEM_REG = "memory_region"
 PREV_FUNCTION = "prev_function"
 NEXT_FUNCTION = "next_function"
 FUNCTIONS = "functions"
@@ -59,6 +60,37 @@ def left_strip_from_list(lines):
     # remove from each string
     return list([line[len(longest_match):] for line in lines])
 
+
+memory_regions = []
+
+def parse_expression(expr):
+    expr = expr.replace('K', '*1024').replace('M', '*1024*1024')
+    return eval(expr)
+
+def parse_ld_memory(ld_file_path):
+    with open(ld_file_path, 'r') as ld_file:
+        in_memory_section = False
+        for line in ld_file:
+            if line.strip() == 'MEMORY':
+                in_memory_section = True
+                continue
+            if in_memory_section:
+                if line.strip() == '}':
+                    break
+                match = re.match(r'\s*(\w+)\s+\(\w*\!*\w*x*\)\s*:\s*ORIGIN\s*=\s*([0-9a-fA-FxX+\(\)\s]+),\s*LENGTH\s*=\s*(\d+\s*[KM]?)', line)
+                if match:
+                    name, origin_expr, length_expr = match.groups()
+                    origin = parse_expression(origin_expr)
+                    length = parse_expression(length_expr)
+                    memory_regions.append({'name': name, 'origin': origin, 'length': length})
+    return memory_regions
+
+def find_memory_region(address):
+    addr = int(address, 16)
+    for region in memory_regions:
+        if addr >= region["origin"] and addr < (region["origin"] + region["length"]):
+            return region["name"]
+    return None
 
 class Collector:
 
@@ -117,18 +149,19 @@ class Collector:
 
         sym[ADDRESS] = address
 
+        sym[MEM_REG] = find_memory_region(address)
         self.symbols[int_address] = sym
         return sym
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
     if os.name == 'nt':
-        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([a-zA-Z]:.+)):(\d+)?")
+        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})?\s+(.)\s+(\w+)(?:\s+([a-zA-Z]:[^\s]+):(\d+))?")
     else:
         parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
 
 
     def parse_size_line(self, line):
-        # print(line)
+        # print("line: {}".format(line))
         match = self.parse_size_line_re.match(line)
         if not match:
             return False
@@ -138,8 +171,8 @@ class Collector:
         type = match.group(3)
         name = match.group(4)
         if match.group(5):
-            file = match.group(6)
-            line = int(match.group(7))
+            file = match.group(5)
+            line = int(match.group(6))
         else:
             file = None
             line = None
@@ -370,6 +403,9 @@ class Collector:
     def all_variables(self):
         return list([f for f in self.all_symbols() if f.get(TYPE, None) == TYPE_VARIABLE])
 
+    def all_mem_regs(self):
+        return list([region["name"] for region in memory_regions])
+
     def enhance_assembly(self):
         for key, symbol in self.symbols.items():
             if ASM in symbol:
@@ -456,8 +492,8 @@ class Collector:
 
     def enhance_function_size_from_assembly(self):
         for f in self.all_symbols():
-            if ASM in f:
-                f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
+            if ASM in f and SIZE not in f:
+                    f[SIZE] = sum([self.count_assembly_code_bytes(l) for l in f[ASM]])
 
     def enhance_sibling_symbols(self):
         for f in self.all_functions():
