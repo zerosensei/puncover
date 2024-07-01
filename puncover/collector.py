@@ -77,7 +77,7 @@ def parse_ld_memory(ld_file_path):
             if in_memory_section:
                 if line.strip() == '}':
                     break
-                match = re.match(r'\s*(\w+)\s+\(\w*\!*\w*x*\)\s*:\s*ORIGIN\s*=\s*([0-9a-fA-FxX+\(\)\s]+),\s*LENGTH\s*=\s*(\d+\s*[KM]?)', line)
+                match = re.match(r'\s*(\w+)\s*\(\w*\!*\w*x*\)\s*:\s*ORIGIN\s*=\s*([0-9a-fA-FxX+\(\)\s]+),\s*LENGTH\s*=\s*(\d+\s*[KM]?)', line)
                 if match:
                     name, origin_expr, length_expr = match.groups()
                     origin = parse_expression(origin_expr)
