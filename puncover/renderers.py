@@ -200,13 +200,12 @@ def style_background_bar_filter(context, x, total, color=None):
 def col_sortable_filter(context, title, is_alpha=False, id=None):
 
     id = title if id is None else id
-    id = id.lower()
 
     # when sorting for numbers, we're interested in large numbers first
     next_sort = 'asc' if is_alpha else 'desc'
-    sort_id, sort_order = context.parent.get('sort', 'a_b').split('_')
+    sort_id, sort_order = context.parent.get('sort', 'a_b').split('_', 2)[:2]
     classes = ['sortable']
-    if sort_id.lower() == id:
+    if sort_id == id:
         sort_class = 'sort_' + sort_order
         next_sort = 'desc' if sort_order == 'asc' else 'asc'
         if is_alpha:
@@ -225,19 +224,20 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
 
 @jinja2.pass_context
 def sorted_filter(context, symbols):
-    sort_id, sort_order = context.parent['sort'].split('_')
+    sort_id, sort_order = context.parent['sort'].split('_', 2)[:2]
 
     def to_num(v):
         if v is None or v == '':
             return 0
         return int(v)
 
-    key = {
-        'name': lambda e: e.get(collector.DISPLAY_NAME, e.get(collector.NAME, None)).lower(),
-        'code': lambda e: to_num(symbol_code_size_filter(context, e)),
-        'stack': lambda e: to_num(symbol_stack_size_filter(context, e)),
-        'vars': lambda e: to_num(symbol_var_size_filter(context, e)),
-    }[sort_id]
+    if (sort_id in {'Name', 'Stack'}):
+         key = {
+            'Name': lambda e: e.get(collector.DISPLAY_NAME, e.get(collector.NAME, None)).lower(),
+            'Stack': lambda e: to_num(symbol_stack_size_filter(context, e)),
+        }[sort_id]
+    else:
+        key = lambda e: to_num(symbol_mem_size_filter(context, e, sort_id))
 
     return list(sorted(symbols, key=key, reverse=(sort_order == 'desc')))
 

@@ -31,7 +31,7 @@
                 <th width="100%">{{ 'Name' | col_sortable(true) }}</th>
                 <th>Remarks</th>
                 {% for mem_reg in memory_regions %}
-                    <th class="col_size">{{ mem_reg | col_sortable(False, 'vars') }}</th>
+                    <th class="col_size">{{ mem_reg | col_sortable(False, mem_reg) }}</th>
                 {% endfor %}
             </tr>
         </thead>
@@ -101,7 +101,7 @@
                 <th>Remarks</th>
                 <th class="col_size">{{ 'Stack' | col_sortable(true) }}</th>
                 {% for mem_reg in memory_regions %}
-                    <th class="col_size">{{ mem_reg | col_sortable(False, 'vars') }}</th>
+                    <th class="col_size">{{ mem_reg | col_sortable(False, mem_reg) }}</th>
                 {% endfor %}
             </tr>
         </thead>
