@@ -77,7 +77,7 @@ def main():
     )
     parser.add_argument('--gcc-tools-base', '--gcc_tools_base', default=gcc_tools_base,
                         help='filename prefix for your gcc tools, e.g. ~/arm-cs-tools/bin/arm-none-eabi-')
-    parser.add_argument('--ld-file', '--ld-file', default='.',
+    parser.add_argument('--ld-file', '--ld-file', required=True,
                         help='location of an Link file')
     parser.add_argument('--elf_file', '--elf-file', required=True,
                         help='location of an ELF file')
@@ -100,13 +100,7 @@ def main():
         print("Unable to find gcc tools base dir (tried searching for 'arm-none-eabi-objdump' on PATH), please specify --gcc-tools-base")
         exit(1)
 
-    ld_files = glob.glob(os.path.join(os.path.abspath(args.ld_file), '*.ld'))
-
-    if ld_files[0] == None:
-        print("Unbale to find .ld file")
-        exit(1)
-
-    parse_ld_memory(ld_files[0])
+    parse_ld_memory(args.ld_file)
 
     builder = create_builder(args.gcc_tools_base, elf_file=args.elf_file,
                              src_root=args.src_root, su_dir=args.build_dir)
