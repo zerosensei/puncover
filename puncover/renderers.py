@@ -203,7 +203,7 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
 
     # when sorting for numbers, we're interested in large numbers first
     next_sort = 'asc' if is_alpha else 'desc'
-    sort_id, sort_order = context.parent.get('sort', 'a_b').split('_', 2)[:2]
+    sort_id, sort_order = context.parent.get('sort', 'a_b').rsplit('_', 1)
     classes = ['sortable']
     if sort_id == id:
         sort_class = 'sort_' + sort_order
@@ -224,7 +224,7 @@ def col_sortable_filter(context, title, is_alpha=False, id=None):
 
 @jinja2.pass_context
 def sorted_filter(context, symbols):
-    sort_id, sort_order = context.parent['sort'].split('_', 2)[:2]
+    sort_id, sort_order = context.parent['sort'].rsplit('_', 1)
 
     def to_num(v):
         if v is None or v == '':
