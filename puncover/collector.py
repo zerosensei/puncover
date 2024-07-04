@@ -155,9 +155,9 @@ class Collector:
 
     # 00000550 00000034 T main	/Users/behrens/Documents/projects/pebble/puncover/puncover/build/../src/puncover.c:25
     if os.name == 'nt':
-        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})?\s+(.)\s+(\w+)(?:\s+([a-zA-Z]:[^\s]+):(\d+))?")
+        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})?\s+(.)\s+(\S+)(?:\s+([a-zA-Z]:[^\s]+):(\d+))?")
     else:
-        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})\s+(.)\s+(\w+)(\s+([^:]+):(\d+))?")
+        parse_size_line_re = re.compile(r"^([\da-f]{8})\s+([\da-f]{8})?\s+(.)\s+(\S+)(?:\s+([^:]+):(\d+))?")
 
 
     def parse_size_line(self, line):
@@ -427,13 +427,13 @@ class Collector:
     #
     # but not:
     # 805bbac:	2471 0805 b64b 0804 b3c9 0804 b459 0804     q$..K.......Y...
-    enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
+    # enhance_call_tree_pattern = re.compile(r"^\s*[\da-f]+:\s+[\d\sa-f]{9}\s+BL?(EQ|NE|CS|HS|CC|LO|MI|PL|VS|VC|HI|LS|GE|LT|GT|LE|AL)?(\.W|\.N)?\s+([\d\sa-f]+)", re.IGNORECASE)
 
     def enhance_call_tree_from_assembly_line(self, function, line):
         if "<" not in line:
             return False
 
-        match = self.enhance_call_tree_pattern.match(line)
+        match = self.gcc_tools.enhance_call_tree_pattern.match(line)
 
         if match:
             callee = self.symbol_by_addr(match.group(3))
